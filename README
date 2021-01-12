@@ -1,0 +1,9 @@
+This repository contains the INSTALL files used to build packages for yoinklinux.
+
+To install the package using yoink-build from yoink-builder, do the following:
+
+1) Make a dedicated directory for the build.
+2) cd into the directory, and put the pkg/v-e-r.INSTALL file there.
+3) Rename the downloaded INSTALL file to INSTALL.
+4) Run yoink-build as root.
+5) If compilation is successful, the packaged software will be under /tmp.
