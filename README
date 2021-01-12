@@ -7,3 +7,5 @@ To install the package using yoink-build from yoink-builder, do the following:
 3) Rename the downloaded INSTALL file to INSTALL.
 4) Run yoink-build as root.
 5) If compilation is successful, the packaged software will be under /tmp.
+
+Do note that the INSTALL files provided in this repository are used to only build the initial tarball for a given package, any modifications are done afterwards and are not tracked here.
