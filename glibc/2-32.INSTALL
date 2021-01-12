@@ -1,0 +1,82 @@
+#!/bin/bash
+# Package information
+packager="gavinpease AT gmail DOT com"
+name=glibc
+major_version=2
+min_version=32
+rel_version=
+download=http://ftp.gnu.org/gnu/glibc/glibc-2.32.tar.xz
+
+# Some nice envionment variables
+prev_dir=$PWD
+srcfolder=$name-src
+source_dir=
+function get_source() {
+	mkdir $srcfolder
+	builtin cd $srcfolder
+	wget $download
+	file=$(ls)
+	tar xf $file 
+	rm $file
+	file=$(ls)
+	builtin cd $file
+	source_dir=$(dirname $file)
+}
+
+# Put all of your pre-compilation configuration here.
+function config() {
+	mkdir build
+	cd build
+	../configure --prefix=/usr                            \
+             --disable-werror                         \
+             --enable-kernel=3.2                      \
+             --enable-stack-protector=strong          \
+             libc_cv_slibdir=/lib	
+}
+
+# Put build commands here.
+function build() {
+	make
+}
+
+# Only change the line that says `make install`
+function build_install() {
+	mkdir /tmp/yoink/$name -p
+	make install DESTDIR=/tmp/yoink/$name
+	mkdir -p /tmp/yoink/$name/var/cache/nscd
+}
+
+function gen_tree(){
+	currdir=$PWD
+	builtin cd /tmp/yoink/$name
+	find -not -name 'install.sh' -not -name '.TREE' -printf '%P\n' > .TREE;
+	builtin cd $currdir
+}
+
+# Put post-build commands here.
+function post_build(){
+	[[ -f install.sh ]] && cp ./install.sh /tmp/yoink/$name
+ 	gen_tree	
+	# Do not change any more lines.
+	builtin cd /tmp/yoink/$name
+	cp $	
+
+
+
+	chown root:root -R .
+	if [[ ! -z $rel_version ]]; then
+		tar --exclude=./ --xform s:'./':: -czf /tmp/$name-$major_version.$min_version.$rel_version.tar.gz ./
+	elif [[ ! -z $min_version ]]; then
+                tar --exclude=./ --xform s:'./':: -czf /tmp/$name-$major_version.$min_version.tar.gz ./
+        else
+                tar --exclude=./ --xform s:'./':: -czf /tmp/$name-$major_version.tar.gz ./
+        fi
+	cd $prev_dir
+	rm -rf /tmp/yoink/$name
+
+}
+export -f get_source
+export -f config
+export -f build
+export -f build_install
+export -f post_build
