@@ -1,0 +1,76 @@
+#!/bin/bash
+# Package information
+packager="gavinpease AT gmail DOT com"
+name=sudo
+major_version=1
+min_version=9
+rel_version=5
+download=https://www.sudo.ws/dist/sudo-1.9.5.tar.gz
+
+# Some nice envionment variables
+prev_dir=$PWD
+srcfolder=$name-src
+function get_source() {
+	mkdir $srcfolder
+	builtin cd $srcfolder
+	wget $download
+	file=$(ls)
+	tar xf $file 
+	rm $file
+	file=$(ls)
+	builtin cd $file
+}
+
+# Put all of your pre-compilation configuration here.
+function config() {
+	./configure --prefix=/usr              \
+            --libexecdir=/usr/lib      \
+            --with-secure-path         \
+            --with-all-insults         \
+            --with-env-editor          \
+            --docdir=/usr/share/doc/sudo-1.9.5p1 \
+            --with-passprompt="[sudo] password for %p: "	
+}
+
+# Put build commands here.
+function build() {
+	make
+}
+
+# Only change the line that says `make install`
+function build_install() {
+	mkdir /tmp/yoink/$name -p
+	make install DESTDIR=/tmp/yoink/$name
+}
+
+function gen_tree(){
+	currdir=$PWD
+	builtin cd /tmp/yoink/$name
+	chmod 4755 usr/bin/sudo
+	find -not -name 'install.sh' -not -name '.TREE' -printf '%P\n' > .TREE;
+	builtin cd $currdir
+}
+
+# Put post-build commands here.
+function post_build(){
+	[[ -f install.sh ]] && cp ./install.sh /tmp/yoink/$name
+ 	gen_tree	
+	# Do not change any more lines.
+	builtin cd /tmp/yoink/$name
+	chown root:root -R .
+	if [[ ! -z $rel_version ]]; then
+		tar --exclude=./ --xform s:'./':: -czf /tmp/$name-$major_version.$min_version.$rel_version.tar.gz ./
+	elif [[ ! -z $min_version ]]; then
+                tar --exclude=./ --xform s:'./':: -czf /tmp/$name-$major_version.$min_version.tar.gz ./
+        else
+                tar --exclude=./ --xform s:'./':: -czf /tmp/$name-$major_version.tar.gz ./
+        fi
+	cd $prev_dir
+	rm -rf /tmp/yoink/$name
+
+}
+export -f get_source
+export -f config
+export -f build
+export -f build_install
+export -f post_build
