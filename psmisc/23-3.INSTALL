@@ -1,0 +1,78 @@
+#!/bin/bash
+# Package information
+packager="gavinpease AT gmail DOT com"
+name=psmisc
+major_version=23
+min_version=3
+rel_version=
+download=https://sourceforge.net/projects/psmisc/files/psmisc/psmisc-23.3.tar.xz
+
+# Some nice envionment variables
+prev_dir=$PWD
+srcfolder=$name-src
+tmpname=/tmp/yoink/$name
+
+function get_source() {
+	mkdir $srcfolder
+	builtin cd $srcfolder
+	wget $download
+	file=$(ls)
+	tar xf $file 
+	rm $file
+	file=$(ls)
+	builtin cd $file
+}
+
+# Put all of your pre-compilation configuration here.
+function config() {
+	./configure --prefix=/usr	
+}
+
+# Put build commands here.
+function build() {
+	make
+}
+
+# Only change the line that says `make install`
+function build_install() {
+	sudo mkdir $tmpname -p
+	sudo make install DESTDIR=$tmpname
+}
+
+function gen_tree(){
+	currdir=$PWD
+	builtin cd $tmpname
+	sudo sh -c "find -not -name 'install.sh' -not -name '.TREE' -printf '%P\n' > .TREE";
+	builtin cd $currdir
+}
+ # If you need to set permissions to different files, do so here, and do the relative directories.
+function set_permissions(){
+	/bin/true
+}
+# Put post-build commands here.
+function post_build(){
+	builtin cd $tmpname
+	# Add links/files here.
+	
+	#
+	[[ -f install.sh ]] && cp ./install.sh $tmpname
+ 	gen_tree	
+	sudo chown root:root -R .
+	if [[ ! -z $rel_version ]]; then
+		tar --exclude=./ --xform s:\\./:: -czf /tmp/$name-$major_version.$min_version.$rel_version.tar.gz ./
+	elif [[ ! -z $min_version ]]; then
+                tar --exclude=./ --xform s:\\./:: -czf /tmp/$name-$major_version.$min_version.tar.gz ./
+        else
+                tar --exclude=./ --xform s:\\./:: -czf /tmp/$name-$major_version.tar.gz ./
+        fi
+	set_permissions
+	cd $prev_dir
+	sudo rm -rf $tmpname
+	rm -rf $srcfolder
+
+}
+export -f get_source
+export -f config
+export -f build
+export -f build_install
+export -f post_build
