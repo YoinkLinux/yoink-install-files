@@ -23,6 +23,7 @@ function get_source() {
 
 # Put all of your pre-compilation configuration here.
 function config() {
+	mkdir build
 	for dir in boot dev etc home mnt opt proc root run sys usr tmp var; do
 		mkdir build/$dir;
 	done
@@ -30,7 +31,7 @@ function config() {
 	ln -sv /usr/bin  build/bin
 	ln -sv /sbin build/sbin
 	ln -sv /usr/lib  build/lib
-	ln -sv /usr/lib  build//lib64
+	ln -sv /usr/lib  build/lib64
 	ln -sv /run build/var/run
 	ln -sv ../run/lock build/var/lock
 }
