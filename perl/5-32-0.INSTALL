@@ -1,0 +1,93 @@
+#!/bin/bash
+# Package information
+packager="gavinpease AT gmail DOT com"
+name=perl
+major_version=5
+min_version=32
+rel_version=0
+download=https://www.cpan.org/src/5.0/perl-5.32.0.tar.xz
+
+# Some nice envionment variables
+prev_dir=$PWD
+srcfolder=$name-src
+tmpname=/tmp/yoink/$name
+
+function get_source() {
+	mkdir $srcfolder
+	builtin cd $srcfolder
+	wget $download
+	file=$(ls)
+	tar xf $file 
+	rm $file
+	file=$(ls)
+	builtin cd $file
+}
+
+# Put all of your pre-compilation configuration here.
+function config() {
+	export BUILD_ZLIB=False
+	export BUILD_BZIP2=0	
+	sh Configure -des \
+		-Dprefix=/usr \
+		-Dvendorprefix=/usr \
+		-Dprivlib=/usr/lib/perl5/5.32/core_perl \
+		-Darchlib=/usr/lib/perl5/5.32/core_perl \
+		-Dsitelib=/usr/lib/perl5/5.32/site_perl \
+		-Dsitearch=/usr/lib/perl5/5.32/site_perl \
+		-Dvendorlib=/usr/lib/perl5/5.32/vendor_perl \
+		-Dvendorarch=/usr/lib/perl5/5.32/vendor_perl \
+		-Dman1dir=/usr/share/man/man1 \
+		-Dman3dir=/usr/share/man/man3 \
+		-Dpager="/usr/bin/less -isR" \
+		-Duseshrplib \
+		-Dusethreads
+}
+
+# Put build commands here.
+function build() {
+	make
+}
+
+# Only change the line that says `make install`
+function build_install() {
+	sudo mkdir $tmpname -p
+	sudo make install DESTDIR=$tmpname
+}
+
+function gen_tree(){
+	currdir=$PWD
+	builtin cd $tmpname
+	sudo sh -c "find -not -name 'install.sh' -not -name '.TREE' -printf '%P\n' > .TREE";
+	builtin cd $currdir
+}
+ # If you need to set permissions to different files, do so here, and do the relative directories.
+function set_permissions(){
+	/bin/true
+}
+# Put post-build commands here.
+function post_build(){
+	builtin cd $tmpname
+	# Add links/files here.
+	unset BUILD_ZLIB BUILD_BZIP2	
+	#
+	[[ -f install.sh ]] && cp ./install.sh $tmpname
+ 	gen_tree	
+	sudo chown root:root -R .
+	if [[ ! -z $rel_version ]]; then
+		tar --exclude=./ --xform s:\\./:: -czf /tmp/$name-$major_version.$min_version.$rel_version.tar.gz ./
+	elif [[ ! -z $min_version ]]; then
+                tar --exclude=./ --xform s:\\./:: -czf /tmp/$name-$major_version.$min_version.tar.gz ./
+        else
+                tar --exclude=./ --xform s:\\./:: -czf /tmp/$name-$major_version.tar.gz ./
+        fi
+	set_permissions
+	cd $prev_dir
+	sudo rm -rf $tmpname
+	rm -rf $srcfolder
+
+}
+export -f get_source
+export -f config
+export -f build
+export -f build_install
+export -f post_build
