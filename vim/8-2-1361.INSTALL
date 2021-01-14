@@ -1,0 +1,84 @@
+#!/bin/bash
+# Package information
+packager="gavinpease AT gmail DOT com"
+name=vim
+major_version=8
+min_version=2
+rel_version=1361
+download=http://anduin.linuxfromscratch.org/LFS/vim-8.2.1361.tar.gz
+
+# Some nice envionment variables
+prev_dir=$PWD
+srcfolder=$name-src
+tmpname=/tmp/yoink/$name
+
+function get_source() {
+	mkdir $srcfolder
+	builtin cd $srcfolder
+	wget $download
+	file=$(ls)
+	tar xf $file 
+	rm $file
+	file=$(ls)
+	builtin cd $file
+}
+
+# Put all of your pre-compilation configuration here.
+function config() {
+	echo '#define SYS_VIMRC_FILE "/etc/vimrc"' >> src/feature.h
+	./configure --prefix=/usr	
+}
+
+# Put build commands here.
+function build() {
+	make
+}
+
+# Only change the line that says `make install`
+function build_install() {
+	sudo mkdir $tmpname -p
+	sudo make install DESTDIR=$tmpname
+	sudo mkdir -p $tmpname/etc
+}
+
+function gen_tree(){
+	currdir=$PWD
+	builtin cd $tmpname
+	sudo sh -c "find -not -name 'install.sh' -not -name '.TREE' -printf '%P\n' > .TREE";
+	builtin cd $currdir
+}
+ # If you need to set permissions to different files, do so here, and do the relative directories.
+function set_permissions(){
+	/bin/true
+}
+# Put post-build commands here.
+function post_build(){
+	builtin cd $tmpname
+	# Add links/files here.
+	mkdir -p $tmpname/usr/bin
+	ln -sv vim $tmpname/usr/bin/vi
+	for L in $tmpname/usr/share/man/{,*/}man1/vim.1; do
+		ln -sv vim.1 $(dirname $L)/vi.1
+	done
+	#
+	[[ -f install.sh ]] && cp ./install.sh $tmpname
+ 	gen_tree	
+	sudo chown root:root -R .
+	if [[ ! -z $rel_version ]]; then
+		tar --exclude=./ --xform s:\\./:: -czf /tmp/$name-$major_version.$min_version.$rel_version.tar.gz ./
+	elif [[ ! -z $min_version ]]; then
+                tar --exclude=./ --xform s:\\./:: -czf /tmp/$name-$major_version.$min_version.tar.gz ./
+        else
+                tar --exclude=./ --xform s:\\./:: -czf /tmp/$name-$major_version.tar.gz ./
+        fi
+	set_permissions
+	cd $prev_dir
+	sudo rm -rf $tmpname
+	rm -rf $srcfolder
+
+}
+export -f get_source
+export -f config
+export -f build
+export -f build_install
+export -f post_build
