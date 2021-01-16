@@ -4,7 +4,7 @@ packager="gavinpease AT gmail DOT com"
 name=zstd
 major_version=1
 min_version=4
-rel_version=0
+rel_version=5
 download=https://github.com/facebook/zstd/releases/download/v1.4.5/zstd-1.4.5.tar.gz
 
 # Some nice envionment variables
@@ -50,7 +50,6 @@ function set_permissions(){
 }
 # Put post-build commands here.
 function post_build(){
-	rm -v $tmpname/usr/lib/libzstd.a
 	[[ -f install.sh ]] && cp ./install.sh $tmpname
  	gen_tree	
 	# Do not change any more lines.
