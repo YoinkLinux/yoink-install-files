@@ -1,0 +1,85 @@
+#!/bin/bash
+# Package information
+packager="gavinpease AT gmail DOT com"
+name=unzip
+major_version=6
+min_version=0
+rel_version=
+download=https://downloads.sourceforge.net/infozip/unzip60.tar.gz
+
+# Some nice envionment variables
+prev_dir=$PWD
+srcfolder=$name-src
+tmpname=/tmp/yoink/$name
+
+function get_source() {
+	mkdir $srcfolder
+	builtin cd $srcfolder
+	wget $download
+	file=$(ls)
+	tar xf $file 
+	rm $file
+	file=$(ls)
+	builtin cd $file
+}
+
+# Put all of your pre-compilation configuration here.
+function config() {
+	wget http://www.linuxfromscratch.org/patches/blfs/svn/unzip-6.0-consolidated_fixes-1.patch
+	patch -Np1 -i ./unzip-6.0-consolidated_fixes-1.patch
+}
+
+# Put build commands here.
+function build() {
+	make -f unix/Makefile generic	
+}
+
+# Only change the line that says `make install`
+function build_install() {
+	sudo mkdir $tmpname -p	
+	sudo make prefix=$tmpname MANDIR=$tmpname/usr/share/man/man1 -f unix/Makefile install DESTDIR=$tmpname
+}
+
+function gen_tree(){
+	currdir=$PWD
+	builtin cd $tmpname
+	sudo sh -c "find -not -name 'install.sh' -not -name '.TREE' -printf '%P\n' > .TREE";
+	builtin cd $currdir
+}
+ # If you need to set permissions to different files, do so here, and do the relative directories.
+function set_permissions(){
+	/bin/true
+}
+# Put post-build commands here.
+function post_build(){
+	builtin cd $tmpname
+	# Add links/files here.
+	
+	#
+	[[ -f install.sh ]] && cp ./install.sh $tmpname
+ 	gen_tree	
+	sudo chown root:root -R .
+	find $tmpname/usr/lib -type f -name \*.a \
+	    -exec strip --strip-debug {} ';'
+	find $tmpname/lib $tmpname/usr/lib -type f -name \*.so* ! -name \*dbg \
+	    -exec strip --strip-unneeded {} ';'
+	find $tmpname/{bin,sbin} $tmpname/usr/{bin,sbin,libexec} -type f \
+	    -exec strip --strip-all {} ';'
+	if [[ ! -z $rel_version ]]; then
+		tar --exclude=./ -P -czf /tmp/$name-$major_version.$min_version.$rel_version.tar.gz ./
+	elif [[ ! -z $min_version ]]; then
+                tar --exclude=./ -P -czf /tmp/$name-$major_version.$min_version.tar.gz ./
+        else
+                tar --exclude=./ -P -czf /tmp/$name-$major_version.tar.gz ./
+        fi
+	set_permissions
+	cd $prev_dir
+	sudo rm -rf $tmpname
+	rm -rf $srcfolder
+
+}
+export -f get_source
+export -f config
+export -f build
+export -f build_install
+export -f post_build
