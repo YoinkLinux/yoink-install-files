@@ -1,0 +1,87 @@
+#!/bin/bash
+# Package information
+packager="gavinpease AT gmail DOT com"
+name=docbook-xml
+major_version=4
+min_version=5
+rel_version=
+download=http://www.docbook.org/xml/4.5/docbook-xml-4.5.zip
+
+# Some nice envionment variables
+prev_dir=$PWD
+srcfolder=$name-src
+tmpname=/tmp/yoink/$name
+
+function get_source() {
+	mkdir $srcfolder
+	builtin cd $srcfolder
+	wget $download
+	file=$(ls)
+	unzip $file 
+	rm $file
+	file=$(ls)
+}
+
+# Put all of your pre-compilation configuration here.
+function config() {
+	/bin/true
+}
+
+# Put build commands here.
+function build() {
+	install -v -d -m755 $tmpname/usr/share/xml/docbook/xml-dtd-4.5
+	install -v -d -m755 $tmpname/etc/xml
+	chown -R root:root . 
+	cp -v -af docbook.cat *.dtd ent/ *.mod \
+	    $tmpname/usr/share/xml/docbook/xml-dtd-4.5	
+}
+
+# Only change the line that says `make install`
+function build_install() {
+	sudo mkdir $tmpname -p
+	sudo make install DESTDIR=$tmpname
+}
+
+function gen_tree(){
+	currdir=$PWD
+	builtin cd $tmpname
+	sudo sh -c "find -not -name 'install.sh' -not -name '.TREE' -printf '%P\n' > .TREE";
+	builtin cd $currdir
+}
+ # If you need to set permissions to different files, do so here, and do the relative directories.
+function set_permissions(){
+	/bin/true
+}
+# Put post-build commands here.
+function post_build(){
+	builtin cd $tmpname
+	# Add links/files here.
+	
+	#
+	[[ -f $prev_dir/install.sh ]] && cp $prev_dir/install.sh $tmpname
+ 	gen_tree	
+	sudo chown root:root -R .
+	find $tmpname/usr/lib -type f -name \*.a \
+	    -exec strip --strip-debug {} ';'
+	find $tmpname/lib $tmpname/usr/lib -type f -name \*.so* ! -name \*dbg \
+	    -exec strip --strip-unneeded {} ';'
+	find $tmpname/{bin,sbin} $tmpname/usr/{bin,sbin,libexec} -type f \
+	    -exec strip --strip-all {} ';'
+	if [[ ! -z $rel_version ]]; then
+		tar --exclude=./ -P -czf /tmp/$name-$major_version.$min_version.$rel_version.tar.gz ./
+	elif [[ ! -z $min_version ]]; then
+                tar --exclude=./ -P -czf /tmp/$name-$major_version.$min_version.tar.gz ./
+        else
+                tar --exclude=./ -P -czf /tmp/$name-$major_version.tar.gz ./
+        fi
+	set_permissions
+	cd $prev_dir
+	#sudo rm -rf $tmpname
+	#rm -rf $srcfolder
+
+}
+export -f get_source
+export -f config
+export -f build
+export -f build_install
+export -f post_build
