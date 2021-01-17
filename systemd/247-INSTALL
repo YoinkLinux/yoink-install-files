@@ -29,7 +29,7 @@ function config() {
 	mkdir build &&
 	cd    build &&
 
-	meson --prefix=$tmpname/usr                 \
+	meson --prefix=/usr                 \
 	      -Dblkid=true                  \
 	      -Dbuildtype=release           \
 	      -Ddefault-dnssec=no           \
@@ -37,7 +37,7 @@ function config() {
 	      -Dinstall-tests=false         \
 	      -Dldconfig=false              \
 	      -Dman=auto                    \
-	      -Drootprefix=                 \
+	      -Drootprefix=$tmpname                 \
 	      -Drootlibdir=/lib             \
 	      -Dsplit-usr=true              \
 	      -Dsysusers=false              \
@@ -59,7 +59,7 @@ function build() {
 # Only change the line that says `make install`
 function build_install() {
 	sudo mkdir $tmpname -p
-	ninja install
+	ninja install 
 }
 
 function gen_tree(){
@@ -78,8 +78,9 @@ function post_build(){
 	# Add links/files here.
 	
 	#
-	[[ -f install.sh ]] && cp ./install.sh $tmpname
+	[[ -f $prev_dir/install.sh ]] && cp $prev_dir/install.sh $tmpname
  	gen_tree	
+	set_permissions
 	sudo chown root:root -R .
 	find $tmpname/usr/lib -type f -name \*.a \
 	    -exec strip --strip-debug {} ';'
@@ -94,7 +95,7 @@ function post_build(){
         else
                 tar --exclude=./ -P -czf /tmp/$name-$major_version.tar.gz ./
         fi
-	set_permissions
+	
 	cd $prev_dir
 	#sudo rm -rf $tmpname
 	#rm -rf $srcfolder
