@@ -35,7 +35,7 @@ function build() {
 # Only change the line that says `make install`
 function build_install() {
 	mkdir $tmpname -p
-	make install prefix=$tmpname
+	make install PREFIX=$tmpname/usr
 }
 
 function gen_tree(){
