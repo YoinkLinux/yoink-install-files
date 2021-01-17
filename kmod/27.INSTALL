@@ -1,0 +1,93 @@
+#!/bin/bash
+# Package information
+packager="gavinpease AT gmail DOT com"
+name=kmod
+major_version=27
+min_version=
+rel_version=
+download=https://www.kernel.org/pub/linux/utils/kernel/kmod/kmod-27.tar.xz
+
+# Some nice envionment variables
+prev_dir=$PWD
+srcfolder=$name-src
+tmpname=/tmp/yoink/$name
+
+function get_source() {
+	mkdir $srcfolder
+	builtin cd $srcfolder
+	wget $download
+	file=$(ls)
+	tar xf $file 
+	rm $file
+	file=$(ls)
+	builtin cd $file
+}
+
+# Put all of your pre-compilation configuration here.
+function config() {
+	./configure --prefix=/usr \
+		--bindir=/bin \
+		--sysconfdir=/etc \
+		--with-rootlibdir=/lib \
+		--with-xz \
+		--with-zlib	
+}
+
+# Put build commands here.
+function build() {
+	make	
+}
+
+# Only change the line that says `make install`
+function build_install() {
+	sudo mkdir $tmpname -p
+	sudo make install DESTDIR=$tmpname
+}
+
+function gen_tree(){
+	currdir=$PWD
+	builtin cd $tmpname
+	sudo sh -c "find -not -name 'install.sh' -not -name '.TREE' -printf '%P\n' > .TREE";
+	builtin cd $currdir
+}
+ # If you need to set permissions to different files, do so here, and do the relative directories.
+function set_permissions(){
+	/bin/true
+}
+# Put post-build commands here.
+function post_build(){
+	builtin cd $tmpname
+	# Add links/files here.
+	mkdir -p $tmpname/sbin
+	for target in depmod insmod lsmod modinfo modprobe rmmod; do
+		ln -sfv ../bin/kmod $tmpname/sbin/$target
+	done
+	ln -sfv kmod $tmpname/bin/lsmod
+	#
+	[[ -f install.sh ]] && cp ./install.sh $tmpname
+ 	gen_tree	
+	sudo chown root:root -R .
+	find $tmpname/usr/lib -type f -name \*.a \
+	    -exec strip --strip-debug {} ';'
+	find $tmpname/lib $tmpname/usr/lib -type f -name \*.so* ! -name \*dbg \
+	    -exec strip --strip-unneeded {} ';'
+	find $tmpname/{bin,sbin} $tmpname/usr/{bin,sbin,libexec} -type f \
+	    -exec strip --strip-all {} ';'
+	if [[ ! -z $rel_version ]]; then
+		tar --exclude=./ -P -czf /tmp/$name-$major_version.$min_version.$rel_version.tar.gz ./
+	elif [[ ! -z $min_version ]]; then
+                tar --exclude=./ -P -czf /tmp/$name-$major_version.$min_version.tar.gz ./
+        else
+                tar --exclude=./ -P -czf /tmp/$name-$major_version.tar.gz ./
+        fi
+	set_permissions
+	cd $prev_dir
+	sudo rm -rf $tmpname
+	rm -rf $srcfolder
+
+}
+export -f get_source
+export -f config
+export -f build
+export -f build_install
+export -f post_build
