@@ -1,0 +1,98 @@
+#!/bin/bash
+# Package information
+packager="gavinpease AT gmail DOT com"
+name=docbook-xsl
+major_version=1
+min_version=79
+rel_version=2
+download=https://github.com/docbook/xslt10-stylesheets/releases/download/release/1.79.2/docbook-xsl-nons-1.79.2.tar.bz2
+
+# Some nice envionment variables
+prev_dir=$PWD
+srcfolder=$name-src
+tmpname=/tmp/yoink/$name
+
+function get_source() {
+	mkdir $srcfolder
+	builtin cd $srcfolder
+	wget $download
+	file=$(ls)
+	tar xf $file 
+	rm $file
+	file=$(ls)
+	builtin cd $file
+}
+
+# Put all of your pre-compilation configuration here.
+function config() {
+	wget http://www.linuxfromscratch.org/patches/blfs/svn/docbook-xsl-nons-1.79.2-stack_fix-1.patch
+	patch -Np1 -i ./docbook-xsl-nons-1.79.2-stack_fix-1.patch
+
+	
+}
+
+# Put build commands here.
+function build() {
+	/bin/true
+}
+
+# Only change the line that says `make install`
+function build_install() {
+	sudo mkdir $tmpname -p
+	install -v -m755 -d $tmpname/usr/share/xml/docbook/xsl-stylesheets-nons-1.79.2
+	cp -v -R VERSION assembly common eclipse epub epub3 extensions fo        \
+         	highlighting html htmlhelp images javahelp lib manpages params  \
+	        profiling roundtrip slides template tests tools webhelp website \
+	        xhtml xhtml-1_1 xhtml5                                          \
+	   $tmpname/usr/share/xml/docbook/xsl-stylesheets-nons-1.79.2
+	ln -s VERSION $tmpname/usr/share/xml/docbook/xsl-stylesheets-nons-1.79.2/VERSION.xsl
+	install -v -m644 -D README \
+                    $tmpname/usr/share/doc/docbook-xsl-nons-1.79.2/README.txt
+	install -v -m644    RELEASE-NOTES* NEWS* \
+                    $tmpname/usr/share/doc/docbook-xsl-nons-1.79.2
+
+}
+
+function gen_tree(){
+	currdir=$PWD
+	builtin cd $tmpname
+	sudo sh -c "find -not -name 'install.sh' -not -name '.TREE' -printf '%P\n' > .TREE";
+	builtin cd $currdir
+}
+ # If you need to set permissions to different files, do so here, and do the relative directories.
+function set_permissions(){
+	/bin/true
+}
+# Put post-build commands here.
+function post_build(){
+	builtin cd $tmpname
+	# Add links/files here.
+	
+	#
+	[[ -f install.sh ]] && cp ./install.sh $tmpname
+ 	gen_tree	
+	sudo chown root:root -R .
+	find $tmpname/usr/lib -type f -name \*.a \
+	    -exec strip --strip-debug {} ';'
+	find $tmpname/lib $tmpname/usr/lib -type f -name \*.so* ! -name \*dbg \
+	    -exec strip --strip-unneeded {} ';'
+	find $tmpname/{bin,sbin} $tmpname/usr/{bin,sbin,libexec} -type f \
+	    -exec strip --strip-all {} ';'
+	if [[ ! -z $rel_version ]]; then
+		tar --exclude=./ -P -czf /tmp/$name-$major_version.$min_version.$rel_version.tar.gz ./
+	elif [[ ! -z $min_version ]]; then
+                tar --exclude=./ -P -czf /tmp/$name-$major_version.$min_version.tar.gz ./
+        else
+                tar --exclude=./ -P -czf /tmp/$name-$major_version.tar.gz ./
+        fi
+	set_permissions
+	cd $prev_dir
+	sudo rm -rf $tmpname
+	rm -rf $srcfolder
+
+}
+export -f get_source
+export -f config
+export -f build
+export -f build_install
+export -f post_build
