@@ -1,10 +1,10 @@
 #!/bin/bash
 # Package information
 packager="gavinpease AT gmail DOT com"
-name=yoink-builder
-major_version=0
-min_version=1
-rel_version=0
+name=filesystem
+major_version=1
+min_version=0
+rel_version=
 download=
 
 # Some nice envionment variables
@@ -80,11 +80,11 @@ function post_build(){
 	builtin cd /tmp/yoink/$name
 	chown root:root -R .
 	if [[ ! -z $rel_version ]]; then
-		tar --exclude=./ --xform s:'./':: -czf ~/$name-$major_version.$min_version.$rel_version.tar.gz ./
+		tar --exclude=./ -P -czf /tmp/$name-$major_version.$min_version.$rel_version.tar.gz ./
 	elif [[ ! -z $min_version ]]; then
-		tar --exclude=./ --xform s:'./':: -czf ~/$name-$major_version.$min_version.tar.gz ./
+		tar --exclude=./ -P -czf /tmp/$name-$major_version.$min_version.tar.gz ./
 	else
-		tar --exclude=./ --xform s:'./':: -czf ~/$name-$major_version.tar.gz ./
+		tar --exclude=./ -P -czf /tmp/$name-$major_version.tar.gz ./
 	fi
 	cd $prev_dir
 #	rm -rf /tmp/yoink/$name
