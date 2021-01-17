@@ -29,7 +29,7 @@ function config() {
 	mkdir build &&
 	cd    build &&
 
-	meson --prefix=/usr                 \
+	meson --prefix=$tmpname/usr                 \
 	      -Dblkid=true                  \
 	      -Dbuildtype=release           \
 	      -Ddefault-dnssec=no           \
@@ -37,8 +37,8 @@ function config() {
 	      -Dinstall-tests=false         \
 	      -Dldconfig=false              \
 	      -Dman=auto                    \
-	      -Drootprefix=$tmpname                 \
-	      -Drootlibdir=/lib             \
+	      -Drootprefix=                 \
+	      -Drootlibdir=$tmpname/lib             \
 	      -Dsplit-usr=true              \
 	      -Dsysusers=false              \
 	      -Drpmmacrosdir=no             \
