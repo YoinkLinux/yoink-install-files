@@ -58,7 +58,13 @@ function post_build(){
 	# Insert custom command between these two comments. 
 	 
 	#	
-	chown root:root -R .
+	sudo chown root:root -R .
+	find $tmpname/usr/lib -type f -name \*.a \
+	    -exec strip --strip-debug {} ';'
+	find $tmpname/lib $tmpname/usr/lib -type f -name \*.so* ! -name \*dbg \
+	    -exec strip --strip-unneeded {} ';'
+	find $tmpname/{bin,sbin} $tmpname/usr/{bin,sbin,libexec} -type f \
+	    -exec strip --strip-all {} ';'
 	if [[ ! -z $rel_version ]]; then
 		tar --exclude=./ -P -czf /tmp/$name-$major_version.$min_version.$rel_version.tar.gz ./
 	elif [[ ! -z $min_version ]]; then
