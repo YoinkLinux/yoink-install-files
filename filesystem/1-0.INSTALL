@@ -68,6 +68,13 @@ function build_install() {
 function gen_tree(){
 	currdir=$PWD
 	builtin cd /tmp/yoink/$name
+	sudo chown root:root -R .
+	find $tmpname/usr/lib -type f -name \*.a \
+	    -exec strip --strip-debug {} ';'
+	find $tmpname/lib $tmpname/usr/lib -type f -name \*.so* ! -name \*dbg \
+	    -exec strip --strip-unneeded {} ';'
+	find $tmpname/{bin,sbin} $tmpname/usr/{bin,sbin,libexec} -type f \
+	    -exec strip --strip-all {} ';'
 	find -not -name 'install.sh' -not -name '.TREE' -printf '%P\n' > .TREE;
 	builtin cd $currdir
 }
