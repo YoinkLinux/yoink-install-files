@@ -28,11 +28,11 @@ function config() {
 		mkdir build/$dir;
 	done
 	mkdir build/run/lock
-	ln -sv /usr/bin  build/bin
-	ln -sv /usr/sbin build/sbin
-	ln -sv /usr/lib  build/lib
-	ln -sv /usr/lib  build/lib64
-	ln -sv /run build/var/run
+	ln -sv usr/bin  build/bin
+	ln -sv usr/sbin build/sbin
+	ln -sv usr/lib  build/lib
+	ln -sv usr/lib  build/lib64
+	ln -sv ../run build/var/run
 	ln -sv ../run/lock build/var/lock
 }
 
